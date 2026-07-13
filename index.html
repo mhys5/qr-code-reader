@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QRコード読み取り</title>
+  <script src="vendor/jsQR.js"></script>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --card: #ffffff;
+      --text: #1d1d1f;
+      --sub: #6e6e73;
+      --accent: #0071e3;
+      --border: #d2d2d7;
+      --error: #d70015;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1e;
+        --card: #2c2c2e;
+        --text: #f5f5f7;
+        --sub: #98989d;
+        --accent: #2997ff;
+        --border: #48484a;
+        --error: #ff453a;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px;
+      min-height: 100vh;
+    }
+    .container { width: 100%; max-width: 560px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    p.desc { color: var(--sub); margin: 0 0 24px; font-size: 14px; }
+    @media (prefers-color-scheme: dark) {
+      p.desc { color: #c7c7cc; }
+    }
+    #drop {
+      display: block;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    #drop.dragover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--card)); }
+    #drop strong { color: var(--accent); }
+    #drop small { display: block; margin-top: 8px; color: var(--sub); }
+    input[type=file] { display: none; }
+    .result {
+      margin-top: 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: none;
+    }
+    .result.show { display: block; }
+    .result.error { color: var(--error); }
+    .result .val { font-size: 15px; }
+    .preview {
+      margin: 16px auto 0;
+      max-width: 100%;
+      /* スクロールせず下のURLまで見えるよう小さめに */
+      max-height: 200px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      /* 透過が見えるようチェッカー背景 */
+      background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      display: none;
+    }
+    .preview.show { display: block; }
+
+    /* 読み取り履歴 */
+    .history-bar { margin-top: 20px; display: flex; justify-content: flex-end; }
+    .history-bar[hidden] { display: none; }
+    .clear-all {
+      font-size: 13px;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--sub);
+      cursor: pointer;
+    }
+    .clear-all:hover { border-color: var(--error); color: var(--error); }
+    .history { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+    .item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .item-head, .item-url { display: flex; align-items: center; gap: 10px; }
+    .item .num {
+      flex-shrink: 0;
+      font-size: 13px;
+      color: var(--sub);
+      font-variant-numeric: tabular-nums;
+      min-width: 26px;
+    }
+    .item .memo {
+      flex: 1;
+      min-width: 0;
+      font: inherit;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+    }
+    .item .memo:focus { outline: none; border-color: var(--accent); }
+    .item .del {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--sub);
+      cursor: pointer;
+    }
+    .item .del:hover { color: var(--error); background: color-mix(in srgb, var(--error) 12%, transparent); }
+    .item .del svg { width: 16px; height: 16px; }
+    .item .val { flex: 1; min-width: 0; word-break: break-all; font-size: 14px; }
+    .item a { color: var(--accent); text-decoration: none; }
+    .item a:hover { text-decoration: underline; }
+    button.copy {
+      flex-shrink: 0;
+      /* ラベルが変わっても幅が動かないよう固定 */
+      width: 76px;
+      font-size: 13px;
+      padding: 6px 0;
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button.copy:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* 最下部の説明 */
+    .footer {
+      margin-top: 32px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      color: var(--sub);
+      font-size: 12px;
+      line-height: 1.7;
+      opacity: .6;
+    }
+    @media (prefers-color-scheme: dark) {
+      .footer { color: #c7c7cc; }
+    }
+    .footer p { margin: 0 0 8px; }
+    .footer p:last-child { margin-bottom: 0; }
+    .footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QRコード読み取り</h1>
+    <p class="desc">背景が透過されたPNG（黒いQRコード）も読み取れます。画像を選択またはドラッグ＆ドロップしてください。</p>
+
+    <label id="drop">
+      <strong>画像を選択</strong> またはここにドラッグ＆ドロップ
+      <small>PNG / JPG / GIF などの画像ファイル・ペースト(⌘V)も可</small>
+      <input type="file" id="file" accept="image/*">
+    </label>
+
+    <img id="preview" class="preview" alt="読み込んだ画像のプレビュー">
+    <div id="result" class="result"></div>
+    <div id="history-bar" class="history-bar" hidden>
+      <button id="clear-all" class="clear-all" type="button">すべて消去</button>
+    </div>
+    <div id="history" class="history"></div>
+
+    <footer class="footer">
+      <p>読み取りはすべてお使いのブラウザ内で完結します。アップロードした画像や読み取った URL がサーバーに送信されることはありません。</p>
+      <p>読み取り履歴はメモを含めて最新 10 件まで、このブラウザの localStorage に保存されます。リロードや再訪問後も表示され、保存先はこの端末・ブラウザ内のみです。「すべて消去」でいつでも削除できます。</p>
+      <p class="credit">QR コードのデコードにはオープンソースの <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener noreferrer">jsQR</a> を利用しています。</p>
+    </footer>
+  </div>
+
+  <script>
+    const drop = document.getElementById('drop');
+    const fileInput = document.getElementById('file');
+    const result = document.getElementById('result');
+    const preview = document.getElementById('preview');
+    const historyEl = document.getElementById('history');
+    const historyBar = document.getElementById('history-bar');
+
+    // 読み取り履歴。新しいものが先頭、最大10件。localStorage に永続化する
+    // （サーバー不要・リロード後も保持）。各要素は { text, memo }。
+    const MAX_HISTORY = 10;
+    const STORAGE_KEY = 'qr-reader-history';
+    const history = [];
+
+    function saveHistory() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      } catch (e) {
+        // プライベートモード等で localStorage が使えなくても動作は継続
+      }
+    }
+
+    function loadHistory() {
+      try {
+        const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        if (Array.isArray(arr)) {
+          history.push(...arr
+            .filter(e => e && typeof e.text === 'string')
+            .slice(0, MAX_HISTORY)
+            .map(e => ({ text: e.text, memo: typeof e.memo === 'string' ? e.memo : '' })));
+        }
+      } catch (e) {
+        // 壊れたデータは無視
+      }
+    }
+
+    function showError(text) {
+      result.className = 'result show error';
+      result.innerHTML = `<div class="val">${text}</div>`;
+    }
+
+    // エラー表示を消す（読み取り成功時）
+    function clearResult() {
+      result.className = 'result';
+      result.innerHTML = '';
+    }
+
+    // クリップボードにコピー。file:// など非セキュアコンテキストでは
+    // Clipboard API が使えないため execCommand フォールバックを使う。
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      return new Promise((resolve, reject) => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy') ? resolve() : reject();
+        } catch (e) {
+          reject(e);
+        } finally {
+          document.body.removeChild(ta);
+        }
+      });
+    }
+
+    function addHistory(text) {
+      history.unshift({ text, memo: '' });
+      if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+      saveHistory();
+      renderHistory();
+    }
+
+    // ゴミ箱アイコン（インラインSVG）
+    const TRASH_SVG =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/>' +
+      '<path d="M10 11v6M14 11v6"/></svg>';
+
+    function renderHistory() {
+      historyEl.innerHTML = '';
+      historyBar.hidden = history.length === 0; // 履歴があるときだけ「すべて消去」を表示
+      history.forEach((entry, i) => {
+        const isUrl = /^https?:\/\//i.test(entry.text);
+        const safe = escapeHtml(entry.text);
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML =
+          '<div class="item-head">' +
+            `<span class="num">#${i + 1}</span>` +
+            '<input class="memo" type="text" placeholder="メモ">' +
+            `<button class="del" type="button" title="削除" aria-label="削除">${TRASH_SVG}</button>` +
+          '</div>' +
+          '<div class="item-url">' +
+            `<span class="val">${isUrl
+              ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a>`
+              : safe}</span>` +
+            '<button class="copy" type="button">Copy</button>' +
+          '</div>';
+
+        // メモ: 入力中は再描画せずデータだけ更新（フォーカスを保つ）
+        const memo = item.querySelector('.memo');
+        memo.value = entry.memo;
+        memo.addEventListener('input', () => { entry.memo = memo.value; saveHistory(); });
+
+        // 削除: このエントリを履歴から除去して再描画
+        item.querySelector('.del').addEventListener('click', () => {
+          history.splice(i, 1);
+          saveHistory();
+          renderHistory();
+        });
+
+        // コピー
+        const btn = item.querySelector('.copy');
+        btn.addEventListener('click', () => {
+          copyText(entry.text)
+            .then(() => { btn.textContent = 'Copied!'; })
+            .catch(() => { btn.textContent = 'Failed'; })
+            .finally(() => setTimeout(() => { btn.textContent = 'Copy'; }, 1500));
+        });
+
+        historyEl.appendChild(item);
+      });
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    // 画像を bg 色で塗った台紙に、周囲 margin(px) の余白付きで描いた canvas を返す。
+    function render(img, bg, margin) {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth + margin * 2;
+      canvas.height = img.naturalHeight + margin * 2;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, margin, margin);
+      return canvas;
+    }
+
+    // RGBA配列を、指定チャンネル(0=R,1=G,2=B)だけのグレースケールRGBAに変換。
+    // 色付きQRで輝度差が小さい場合（例: 黄モジュール×白背景は青チャンネルで高コントラスト）の救済用。
+    function channelGray(src, ch) {
+      const g = new Uint8ClampedArray(src.length);
+      for (let i = 0; i < src.length; i += 4) {
+        const v = src[i + ch];
+        g[i] = g[i + 1] = g[i + 2] = v;
+        g[i + 3] = 255;
+      }
+      return g;
+    }
+
+    function decode(img) {
+      // 透過QRは「黒モジュール/透過背景」とも「白モジュール/透過背景」ともあり得る。
+      // また端まで詰まって余白(クワイエットゾーン)が無いと jsQR は検出できない。
+      // 余白は付けすぎても検出の邪魔にならないため、透過/フチの有無を問わず
+      // 常に一定のフチを足して合成する。埋める色ごとに白・黒の2通りを試す
+      // （黒QR→白背景+白フチ、白QR→黒背景+黒フチ）。
+      const m = Math.round(Math.min(img.naturalWidth, img.naturalHeight) * 0.1);
+      for (const bg of ['#ffffff', '#000000']) {
+        const canvas = render(img, bg, m);
+        const { data, width, height } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+        // ch=-1 は輝度でそのまま（白黒・濃い色のQR）。0/1/2 は R/G/B 各チャンネルで
+        // 再試行し、輝度差が小さい色付きQR（例: 黄×白）を救済する。
+        for (let ch = -1; ch < 3; ch++) {
+          const pixels = ch < 0 ? data : channelGray(data, ch);
+          const code = jsQR(pixels, width, height, { inversionAttempts: 'attemptBoth' });
+          if (code && code.data) {
+            preview.src = canvas.toDataURL(); // デコードに成功した合成後の画像を表示
+            clearResult();
+            addHistory(code.data);
+            return;
+          }
+        }
+      }
+      showError('QRコードを検出できませんでした。別の画像でお試しください。');
+    }
+
+    function handleFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showError('画像ファイルを選択してください。');
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        preview.src = url;
+        preview.className = 'preview show';
+        decode(img);
+      };
+      img.onerror = () => showError('画像を読み込めませんでした。');
+      img.src = url;
+    }
+
+    fileInput.addEventListener('change', e => {
+      handleFile(e.target.files[0]);
+      // 同じファイルを再選択しても change が発火するよう値をリセット
+      fileInput.value = '';
+    });
+
+    ['dragenter', 'dragover'].forEach(ev =>
+      drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('dragover'); }));
+    ['dragleave', 'drop'].forEach(ev =>
+      drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('dragover'); }));
+    drop.addEventListener('drop', e => handleFile(e.dataTransfer.files[0]));
+
+    // クリップボードからの貼り付けにも対応
+    window.addEventListener('paste', e => {
+      const item = [...e.clipboardData.items].find(i => i.type.startsWith('image/'));
+      if (item) handleFile(item.getAsFile());
+    });
+
+    // 履歴（localStorage 含む）をすべて消去
+    document.getElementById('clear-all').addEventListener('click', () => {
+      if (history.length === 0 || !confirm('保存した履歴をすべて消去しますか？')) return;
+      history.length = 0;
+      saveHistory();
+      renderHistory();
+    });
+
+    // 起動時に保存済みの履歴を復元
+    loadHistory();
+    renderHistory();
+  </script>
+</body>
+</html>
