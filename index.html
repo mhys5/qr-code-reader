@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QRコード読み取り</title>
+  <title>QRコードリーダー</title>
+  <link rel="icon" href="img/qr_icon.png" type="image/png">
   <script src="vendor/jsQR.js"></script>
   <style>
     :root {
@@ -15,6 +17,7 @@
       --border: #d2d2d7;
       --error: #d70015;
     }
+
     @media (prefers-color-scheme: dark) {
       :root {
         --bg: #1c1c1e;
@@ -26,7 +29,11 @@
         --error: #ff453a;
       }
     }
-    * { box-sizing: border-box; }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
@@ -37,12 +44,29 @@
       padding: 32px 16px;
       min-height: 100vh;
     }
-    .container { width: 100%; max-width: 560px; }
-    h1 { font-size: 22px; margin: 0 0 4px; }
-    p.desc { color: var(--sub); margin: 0 0 24px; font-size: 14px; }
-    @media (prefers-color-scheme: dark) {
-      p.desc { color: #c7c7cc; }
+
+    .container {
+      width: 100%;
+      max-width: 560px;
     }
+
+    h1 {
+      font-size: 22px;
+      margin: 0 0 4px;
+    }
+
+    p.desc {
+      color: var(--sub);
+      margin: 0 0 24px;
+      font-size: 14px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      p.desc {
+        color: #c7c7cc;
+      }
+    }
+
     #drop {
       display: block;
       border: 2px dashed var(--border);
@@ -53,10 +77,26 @@
       cursor: pointer;
       transition: border-color .15s, background .15s;
     }
-    #drop.dragover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--card)); }
-    #drop strong { color: var(--accent); }
-    #drop small { display: block; margin-top: 8px; color: var(--sub); }
-    input[type=file] { display: none; }
+
+    #drop.dragover {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, var(--card));
+    }
+
+    #drop strong {
+      color: var(--accent);
+    }
+
+    #drop small {
+      display: block;
+      margin-top: 8px;
+      color: var(--sub);
+    }
+
+    input[type=file] {
+      display: none;
+    }
+
     .result {
       margin-top: 24px;
       background: var(--card);
@@ -65,9 +105,19 @@
       padding: 20px;
       display: none;
     }
-    .result.show { display: block; }
-    .result.error { color: var(--error); }
-    .result .val { font-size: 15px; }
+
+    .result.show {
+      display: block;
+    }
+
+    .result.error {
+      color: var(--error);
+    }
+
+    .result .val {
+      font-size: 15px;
+    }
+
     .preview {
       margin: 16px auto 0;
       max-width: 100%;
@@ -85,11 +135,22 @@
       background-position: 0 0, 0 8px, 8px -8px, -8px 0;
       display: none;
     }
-    .preview.show { display: block; }
+
+    .preview.show {
+      display: block;
+    }
 
     /* 読み取り履歴 */
-    .history-bar { margin-top: 20px; display: flex; justify-content: flex-end; }
-    .history-bar[hidden] { display: none; }
+    .history-bar {
+      margin-top: 20px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .history-bar[hidden] {
+      display: none;
+    }
+
     .clear-all {
       font-size: 13px;
       padding: 6px 12px;
@@ -99,8 +160,19 @@
       color: var(--sub);
       cursor: pointer;
     }
-    .clear-all:hover { border-color: var(--error); color: var(--error); }
-    .history { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+
+    .clear-all:hover {
+      border-color: var(--error);
+      color: var(--error);
+    }
+
+    .history {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     .item {
       display: flex;
       flex-direction: column;
@@ -110,7 +182,14 @@
       border-radius: 10px;
       padding: 10px 12px;
     }
-    .item-head, .item-url { display: flex; align-items: center; gap: 10px; }
+
+    .item-head,
+    .item-url {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .item .num {
       flex-shrink: 0;
       font-size: 13px;
@@ -118,6 +197,7 @@
       font-variant-numeric: tabular-nums;
       min-width: 26px;
     }
+
     .item .memo {
       flex: 1;
       min-width: 0;
@@ -129,7 +209,12 @@
       border-radius: 6px;
       padding: 5px 8px;
     }
-    .item .memo:focus { outline: none; border-color: var(--accent); }
+
+    .item .memo:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
     .item .del {
       flex-shrink: 0;
       display: flex;
@@ -144,11 +229,33 @@
       color: var(--sub);
       cursor: pointer;
     }
-    .item .del:hover { color: var(--error); background: color-mix(in srgb, var(--error) 12%, transparent); }
-    .item .del svg { width: 16px; height: 16px; }
-    .item .val { flex: 1; min-width: 0; word-break: break-all; font-size: 14px; }
-    .item a { color: var(--accent); text-decoration: none; }
-    .item a:hover { text-decoration: underline; }
+
+    .item .del:hover {
+      color: var(--error);
+      background: color-mix(in srgb, var(--error) 12%, transparent);
+    }
+
+    .item .del svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .item .val {
+      flex: 1;
+      min-width: 0;
+      word-break: break-all;
+      font-size: 14px;
+    }
+
+    .item a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .item a:hover {
+      text-decoration: underline;
+    }
+
     button.copy {
       flex-shrink: 0;
       /* ラベルが変わっても幅が動かないよう固定 */
@@ -163,7 +270,11 @@
       cursor: pointer;
       white-space: nowrap;
     }
-    button.copy:hover { border-color: var(--accent); color: var(--accent); }
+
+    button.copy:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
 
     /* 最下部の説明 */
     .footer {
@@ -175,14 +286,27 @@
       line-height: 1.7;
       opacity: .6;
     }
+
     @media (prefers-color-scheme: dark) {
-      .footer { color: #c7c7cc; }
+      .footer {
+        color: #c7c7cc;
+      }
     }
-    .footer p { margin: 0 0 8px; }
-    .footer p:last-child { margin-bottom: 0; }
-    .footer a { color: var(--accent); }
+
+    .footer p {
+      margin: 0 0 8px;
+    }
+
+    .footer p:last-child {
+      margin-bottom: 0;
+    }
+
+    .footer a {
+      color: var(--accent);
+    }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h1>QRコード読み取り</h1>
@@ -204,7 +328,8 @@
     <footer class="footer">
       <p>読み取りはすべてお使いのブラウザ内で完結します。アップロードした画像や読み取った URL がサーバーに送信されることはありません。</p>
       <p>読み取り履歴はメモを含めて最新 10 件まで、このブラウザの localStorage に保存されます。リロードや再訪問後も表示され、保存先はこの端末・ブラウザ内のみです。「すべて消去」でいつでも削除できます。</p>
-      <p class="credit">QR コードのデコードにはオープンソースの <a href="https://github.com/cozmo/jsQR" target="_blank" rel="noopener noreferrer">jsQR</a> を利用しています。</p>
+      <p class="credit">QR コードのデコードにはオープンソースの <a href="https://github.com/cozmo/jsQR" target="_blank"
+          rel="noopener noreferrer">jsQR</a> を利用しています。</p>
     </footer>
   </div>
 
@@ -302,15 +427,15 @@
         item.className = 'item';
         item.innerHTML =
           '<div class="item-head">' +
-            `<span class="num">#${i + 1}</span>` +
-            '<input class="memo" type="text" placeholder="メモ">' +
-            `<button class="del" type="button" title="削除" aria-label="削除">${TRASH_SVG}</button>` +
+          `<span class="num">#${i + 1}</span>` +
+          '<input class="memo" type="text" placeholder="メモ">' +
+          `<button class="del" type="button" title="削除" aria-label="削除">${TRASH_SVG}</button>` +
           '</div>' +
           '<div class="item-url">' +
-            `<span class="val">${isUrl
-              ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a>`
-              : safe}</span>` +
-            '<button class="copy" type="button">Copy</button>' +
+          `<span class="val">${isUrl
+            ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a>`
+            : safe}</span>` +
+          '<button class="copy" type="button">Copy</button>' +
           '</div>';
 
         // メモ: 入力中は再描画せずデータだけ更新（フォーカスを保つ）
@@ -441,4 +566,5 @@
     renderHistory();
   </script>
 </body>
+
 </html>
