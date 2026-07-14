@@ -125,14 +125,6 @@
       max-height: 200px;
       border-radius: 8px;
       border: 1px solid var(--border);
-      /* 透過が見えるようチェッカー背景 */
-      background-image:
-        linear-gradient(45deg, #ccc 25%, transparent 25%),
-        linear-gradient(-45deg, #ccc 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #ccc 75%),
-        linear-gradient(-45deg, transparent 75%, #ccc 75%);
-      background-size: 16px 16px;
-      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
       display: none;
     }
 
@@ -310,11 +302,12 @@
 <body>
   <div class="container">
     <h1>QRコード読み取り</h1>
-    <p class="desc">背景が透過されたPNG（黒いQRコード）も読み取れます。画像を選択またはドラッグ＆ドロップしてください。</p>
+    <p class="desc">QRコードの画像からURLを読み取るツールです。</p>
+    <p class="desc">背景が透過されていても読み取れます。画像を選択またはエリア内にドラッグ＆ドロップしてください。</p>
 
     <label id="drop">
       <strong>画像を選択</strong> またはここにドラッグ＆ドロップ
-      <small>PNG / JPG / GIF などの画像ファイル・ペースト(⌘V)も可</small>
+      <small>PNG / JPG / GIF などの画像ファイル</small>
       <input type="file" id="file" accept="image/*">
     </label>
 
@@ -326,10 +319,10 @@
     <div id="history" class="history"></div>
 
     <footer class="footer">
-      <p>読み取りはすべてお使いのブラウザ内で完結します。アップロードした画像や読み取った URL がサーバーに送信されることはありません。</p>
-      <p>読み取り履歴はメモを含めて最新 10 件まで、このブラウザの localStorage に保存されます。リロードや再訪問後も表示され、保存先はこの端末・ブラウザ内のみです。「すべて消去」でいつでも削除できます。</p>
-      <p class="credit">QR コードのデコードにはオープンソースの <a href="https://github.com/cozmo/jsQR" target="_blank"
-          rel="noopener noreferrer">jsQR</a> を利用しています。</p>
+      <p>処理はすべてブラウザ内で完結します。アップロードした画像や読み取ったURLがサーバーに送信されることはありません。</p>
+      <p>読み取り履歴はメモを含めて最新10件まで、このブラウザのlocalStorageに保存されます。リロードやブラウザを閉じても保持され、「すべて消去」でいつでも削除できます。</p>
+      <p class="credit">QRコードのデコードには<a href="https://github.com/cozmo/jsQR" target="_blank"
+          rel="noopener noreferrer">jsQR</a>を利用しています。</p>
     </footer>
   </div>
 
@@ -341,8 +334,8 @@
     const historyEl = document.getElementById('history');
     const historyBar = document.getElementById('history-bar');
 
-    // 読み取り履歴。新しいものが先頭、最大10件。localStorage に永続化する
-    // （サーバー不要・リロード後も保持）。各要素は { text, memo }。
+    // 読み取り履歴
+    // 新しいものが先頭で最大10件。localStorageに保存する
     const MAX_HISTORY = 10;
     const STORAGE_KEY = 'qr-reader-history';
     const history = [];
@@ -351,7 +344,7 @@
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
       } catch (e) {
-        // プライベートモード等で localStorage が使えなくても動作は継続
+        // プライベートモード等でlocalStorageが使えなくても動作は継続
       }
     }
 
