@@ -52,13 +52,16 @@
 
     h1 {
       font-size: 22px;
-      margin: 0 0 4px;
+      margin: 0 0 16px;
     }
 
     p.desc {
       color: var(--sub);
-      margin: 0 0 24px;
+      margin: 0 0 4px;
       font-size: 14px;
+    }
+    p.desc:last-of-type {
+      margin-bottom: 24px;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -301,7 +304,7 @@
 
 <body>
   <div class="container">
-    <h1>QRコード読み取り</h1>
+    <h1>QRコードリーダー</h1>
     <p class="desc">QRコードの画像からURLを読み取るツールです。</p>
     <p class="desc">背景が透過されていても読み取れます。画像を選択またはエリア内にドラッグ＆ドロップしてください。</p>
 
