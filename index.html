@@ -60,6 +60,7 @@
       margin: 0 0 4px;
       font-size: 14px;
     }
+
     p.desc:last-of-type {
       margin-bottom: 24px;
     }
@@ -307,6 +308,7 @@
     <h1>QRコードリーダー</h1>
     <p class="desc">QRコードの画像からURLを読み取るツールです。</p>
     <p class="desc">背景が透過されていても読み取れます。画像を選択またはエリア内にドラッグ＆ドロップしてください。</p>
+    <p class="desc">読み取り履歴は最新10件までこのブラウザのlocalStorageに保存されます。メモを含めリロードやブラウザを閉じても保持され、「すべて消去」でいつでも削除できます。</p>
 
     <label id="drop">
       <strong>画像を選択</strong> またはここにドラッグ＆ドロップ
@@ -323,7 +325,6 @@
 
     <footer class="footer">
       <p>処理はすべてブラウザ内で完結します。アップロードした画像や読み取ったURLがサーバーに送信されることはありません。</p>
-      <p>読み取り履歴はメモを含めて最新10件まで、このブラウザのlocalStorageに保存されます。リロードやブラウザを閉じても保持され、「すべて消去」でいつでも削除できます。</p>
       <p class="credit">QRコードのデコードには<a href="https://github.com/cozmo/jsQR" target="_blank"
           rel="noopener noreferrer">jsQR</a>を利用しています。</p>
     </footer>
