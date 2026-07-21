@@ -5,6 +5,12 @@
 ## 使ってみる
 https://mhys5.github.io/qr-code-reader/
 
+## アップロード対応拡張子
+PNG / JPG（JPEG）/ GIF / WebP / BMP / SVG
+
+ブラウザが画像として表示できる形式に対応。
+TIFFやHEICは、多くのブラウザがデコードできないため非対応。
+
 ## 読み取り履歴について
 履歴を最大10件までlocalStorageに保存。
 また、各履歴のメモ欄には自由にテキストを入力可能。
